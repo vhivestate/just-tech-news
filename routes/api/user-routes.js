@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { User, Post, Vote } = require("../../models");
+const { User, Post, Comment, Vote } = require('../../models');
 
 // GET /api/users = SELECT * FROM users;
 router.get('/', (req, res) => {
@@ -16,37 +16,44 @@ router.get('/', (req, res) => {
 
 // GET /api/users/1 = SELECT * FROM users WHERE id = 1
 router.get('/:id', (req, res) => {
-    User.findOne({
-        attributes: { exclude: ['password'] },
-        where: {
-          id: req.params.id
-        },
-        include: [
-          {
-            model: Post,
-            attributes: ['id', 'title', 'post_url', 'created_at']
-          },
-          {
-            model: Post,
-            attributes: ['title'],
-            through: Vote,
-            as: 'voted_posts'
-          }
-        ]
-      })
-        .then(dbUserData => {
-          if (!dbUserData) {
-            res.status(404).json({ message: 'No user found with this id' });
-            return;
-          }
-          res.json(dbUserData);
-        })
-        .catch(err => {
-          console.log(err);
-          res.status(500).json(err);
-        });
-      
-  });
+  User.findOne({
+    attributes: { exclude: ['password'] },
+    where: {
+      id: req.params.id
+    },
+    include: [
+      {
+        model: Post,
+        attributes: ['id', 'title', 'post_url', 'created_at']
+      },
+      {
+        model: Comment,
+        attributes: ['id', 'comment_text', 'created_at'],
+        include: {
+          model: Post,
+          attributes: ['title']
+        }
+      },
+      {
+        model: Post,
+        attributes: ['title'],
+        through: Vote,
+        as: 'voted_posts'
+      }
+    ]
+  })
+    .then(dbUserData => {
+      if (!dbUserData) {
+        res.status(404).json({ message: 'No user found with this id' });
+        return;
+      }
+      res.json(dbUserData);
+    })
+    .catch(err => {
+      console.log(err);
+      res.status(500).json(err);
+    });
+});
 
 // POST /api/users =
 // INSERT INTO users
